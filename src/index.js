@@ -17,7 +17,7 @@ async function handleRequest(request, env) {
   const url = new URL(request.url)
   const apiToken = env.CF_API_TOKEN
 
-  // The URL is formed of ZONE_ID/ACTION
+  // The URL is formed of ZONE_ID/ACTION.
   const path = url.pathname.split("/")
   const zoneID = path[1]
   const action = path[2]
@@ -38,7 +38,7 @@ async function handleRequest(request, env) {
   const rootURL = postURL.protocol + '//' + postURL.host
   const sitemapURL = rootURL + '/sitemap-posts.xml' 
 
-  // We define the commmons URL to purge.
+  // We define the commmon URL to purge.
   var urlToPurge = [sitemapURL];
 
   // If a new post has been published on Ghost CMS.
@@ -56,10 +56,10 @@ async function handleRequest(request, env) {
     return new Response("Bad Request", { status: 400 })
   }
 
-  // We purge the url in Cloudflare Cache
+  // We purge the URL from Cloudflare Cache.
   const resp = await purgeURL(urlToPurge, zoneID, apiToken)
 
-  // The purge has failed
+  // The purge has failed.
   if (!resp.ok) {
     console.log(`🧹 Purge Error : ${resp.statusText} - ${zoneID} > ${urlToPurge}`)
     return new Response(resp.statusText, { status: resp.status })
@@ -71,15 +71,15 @@ async function handleRequest(request, env) {
 }
 
 /**
- * Uses the Cloudflare API to purge a URL from the cache, can't use the Worker Cache API
+ * Uses the Cloudflare API to purge a URL from the cache; can't use the Worker Cache API
  * because it only works per datacenter. Using the Cloudflare API ensures global purge.
  * 
- * @param {Array} urlToPurge Url to purge from the cache
+ * @param {Array} urlToPurge URL to purge from the cache
  * @returns {Promise<Response>} Response from Cloudflare API
  */
 async function purgeURL(urlToPurge, zoneID, apiToken) {
 
-  // We convert the array to a json string
+  // We convert the array to a json string.
   const url = JSON.stringify(urlToPurge);
 
   const requestInit = {
@@ -98,7 +98,7 @@ async function purgeURL(urlToPurge, zoneID, apiToken) {
  * Parse the body request.
  * 
  * @param {json} request 
- * @returns {Object} The parsed  json request 
+ * @returns {Object} The parsed json request 
  */
 async function parseWebhookBody(request) {
   const body = JSON.stringify(await request.json())
