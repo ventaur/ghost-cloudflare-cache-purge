@@ -1,16 +1,20 @@
 {
   "private": true,
   "name": "ghost-cloudflare-cache-purge",
+  "type": "module",
   "version": "1.1.0",
   "description": "A Cloudflare Worker to purge cached pages when a post is updated or created on multiple Ghost blogs",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha './test/**/*.test.js'",
     "format": "prettier --write '**/*.{js,css,json,md}'"
   },
   "author": "ltoinel <ludovic@toinel.com>",
   "license": "MIT",
   "devDependencies": {
+    "chai": "^5.2.0",
+    "load-json-file": "^7.0.1",
+    "mocha": "^11.1.0",
     "prettier": "^2.5.1"
   }
 }

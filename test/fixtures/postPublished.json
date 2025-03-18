@@ -1,0 +1,97 @@
+{
+  "post": {
+    "current": {
+      "id": "a3f1b2c4d5e6f7890abc1234",
+      "uuid": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "Will Elder Scrolls VI ever get here?",
+      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "mobiledoc": null,
+      "html": "<p>Will it ever get here? It's hard to tell.</p><p>Should you play something else in the meantime? Absolutely!</p>",
+      "comment_id": "a3f1b2c4d5e6f7890abc1234",
+      "plaintext": "Will it ever get here? It's hard to tell.\n\nShould you play something else in the meantime? Absolutely!",
+      "feature_image": null,
+      "featured": true,
+      "status": "published",
+      "visibility": "public",
+      "created_at": "2025-03-18T02:24:11.000Z",
+      "updated_at": "2025-03-18T02:25:45.000Z",
+      "published_at": "2025-03-18T02:25:45.000Z",
+      "custom_excerpt": "Don't wait for it to have fun playing something else!",
+      "canonical_url": null,
+      "authors": [
+        {
+          "id": "b4c2d3e4f5a6b7890cde1234",
+          "name": "M'aiq the Liar",
+          "slug": "maiq",
+          "email": "maiq.the.liar@example.com",
+          "profile_image": "https://gravatar.com/avatar/50c9a7f3ed9218e16848c1503166279b?s=400&d=robohash&r=x",
+          "cover_image": null,
+          "status": "active",
+          "last_seen": "2025-03-18T02:19:14.000Z",
+          "created_at": "2001-10-31T01:38:20.000Z",
+          "updated_at": "2025-03-18T02:19:14.000Z",
+          "url": "https://blog.localhost/author/maiq/"
+        }
+      ],
+      "tags": [
+        {
+          "id": "c5d3e4f5a6b7c890ddef2345",
+          "name": "gaming",
+          "slug": "gaming",
+          "description": null,
+          "feature_image": null,
+          "visibility": "public",
+          "created_at": "2020-02-25T03:11:51.000Z",
+          "updated_at": "2020-02-25T03:11:51.000Z",
+          "url": "https://blog.localhost/tag/gaming/"
+        },
+        {
+          "id": "d6e4f5a6b7c8d901ef012345",
+          "name": "news",
+          "slug": "news",
+          "description": null,
+          "feature_image": null,
+          "visibility": "public",
+          "created_at": "2024-05-18T22:06:51.000Z",
+          "updated_at": "2024-05-18T22:06:51.000Z",
+          "url": "https://blog.localhost/tag/news/"
+        }
+      ],
+      "primary_author": {
+        "id": "b4c2d3e4f5a6b7890cde1234",
+        "name": "M'aiq the Liar",
+        "slug": "maiq",
+        "email": "maiq.the.liar@example.com",
+        "profile_image": "https://gravatar.com/avatar/50c9a7f3ed9218e16848c1503166279b?s=400&d=robohash&r=x",
+        "cover_image": null,
+        "status": "active",
+        "last_seen": "2025-03-18T02:19:14.000Z",
+        "created_at": "2001-10-31T01:38:20.000Z",
+        "updated_at": "2025-03-18T02:19:14.000Z",
+        "url": "https://blog.localhost/author/maiq/"
+      },
+      "primary_tag": {
+        "id": "c5d3e4f5a6b7c890ddef2345",
+        "name": "gaming",
+        "slug": "gaming",
+        "description": null,
+        "feature_image": null,
+        "visibility": "public",
+        "created_at": "2020-02-25T03:11:51.000Z",
+        "updated_at": "2020-02-25T03:11:51.000Z",
+        "url": "https://blog.localhost/tag/gaming/"
+      },
+      "url": "https://blog.localhost/will-elder-scrolls-vi-ever-get-here/",
+      "excerpt": "Don't wait for it to have fun playing something else!",
+      "reading_time": 0,
+      "feature_image_alt": null,
+      "feature_image_caption": null,
+      "email_only": false
+    },
+    "previous": {
+      "status": "draft",
+      "updated_at": "2025-03-18T02:25:26.000Z",
+      "published_at": null
+    }
+  }
+}
