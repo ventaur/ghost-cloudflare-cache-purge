@@ -4,17 +4,17 @@
       "id": "a3f1b2c4d5e6f7890abc1234",
       "uuid": "123e4567-e89b-12d3-a456-426614174000",
       "title": "Will Elder Scrolls VI ever get here?",
-      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "slug": "will-es6-ever-get-here",
       "mobiledoc": null,
       "html": "<p>Will it ever get here? It's hard to tell.</p><p>Should you play something else in the meantime? Absolutely!</p>",
       "comment_id": "a3f1b2c4d5e6f7890abc1234",
       "plaintext": "Will it ever get here? It's hard to tell.\n\nShould you play something else in the meantime? Absolutely!",
       "feature_image": null,
       "featured": true,
-      "status": "published",
+      "status": "draft",
       "visibility": "public",
       "created_at": "2025-03-18T02:24:11.000Z",
-      "updated_at": "2025-03-18T02:25:45.000Z",
+      "updated_at": "2025-03-18T03:13:41.000Z",
       "published_at": "2025-03-18T02:25:45.000Z",
       "custom_excerpt": "Don't wait for it to have fun playing something else!",
       "canonical_url": null,
@@ -30,7 +30,7 @@
           "last_seen": "2025-03-18T02:19:14.000Z",
           "created_at": "2001-10-31T01:38:20.000Z",
           "updated_at": "2025-03-18T02:19:14.000Z",
-          "url": "https://blog.example.com/author/maiq/"
+          "url": "https://blog.localhost/author/maiq/"
         }
       ],
       "tags": [
@@ -43,7 +43,7 @@
           "visibility": "public",
           "created_at": "2020-02-25T03:11:51.000Z",
           "updated_at": "2020-02-25T03:11:51.000Z",
-          "url": "https://blog.example.com/tag/gaming/"
+          "url": "https://blog.localhost/tag/gaming/"
         },
         {
           "id": "d6e4f5a6b7c8d901ef012345",
@@ -54,7 +54,7 @@
           "visibility": "public",
           "created_at": "2024-05-18T22:06:51.000Z",
           "updated_at": "2024-05-18T22:06:51.000Z",
-          "url": "https://blog.example.com/tag/news/"
+          "url": "https://blog.localhost/tag/news/"
         }
       ],
       "primary_author": {
@@ -68,7 +68,7 @@
         "last_seen": "2025-03-18T02:19:14.000Z",
         "created_at": "2001-10-31T01:38:20.000Z",
         "updated_at": "2025-03-18T02:19:14.000Z",
-        "url": "https://blog.example.com/author/maiq/"
+        "url": "https://blog.localhost/author/maiq/"
       },
       "primary_tag": {
         "id": "c5d3e4f5a6b7c890ddef2345",
@@ -79,9 +79,9 @@
         "visibility": "public",
         "created_at": "2020-02-25T03:11:51.000Z",
         "updated_at": "2020-02-25T03:11:51.000Z",
-        "url": "https://blog.example.com/tag/gaming/"
+        "url": "https://blog.localhost/tag/gaming/"
       },
-      "url": "https://blog.example.com/will-elder-scrolls-vi-ever-get-here/",
+      "url": "https://blog.localhost/will-elder-scrolls-vi-ever-get-here/",
       "excerpt": "Don't wait for it to have fun playing something else!",
       "reading_time": 0,
       "feature_image_alt": null,
@@ -89,9 +89,8 @@
       "email_only": false
     },
     "previous": {
-      "status": "draft",
-      "updated_at": "2025-03-18T02:25:26.000Z",
-      "published_at": null
+      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "updated_at": "2025-03-18T02:41:20.000Z"
     }
   }
 }

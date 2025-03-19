@@ -1,18 +1,20 @@
 import 'chai/register-should.js'
 import { loadJsonFile } from 'load-json-file'
+import nock from 'nock'
 
+import arrayMembersAreEqual from './compareArrays.js'
 import worker from '../src/index.js'
 
+const BASE_GHOST_URL = 'https://blog.example.com'
+const SITEMAP_URL = `${BASE_GHOST_URL}/sitemap-posts.xml`
+
 const BASE_WORKER_URL = 'https://fake-worker.workers.dev'
+const BASE_CLOUDFLARE_API_URL = 'https://api.cloudflare.com'
 const ZONE1 = 'zone-1'
 const ZONE2 = 'zone-2'
 const POST_PUBLISHED = 'postPublished'
 const POST_UPDATED = 'postUpdated'
 
-const WORKER_ZONE1_POST_PUBLISHED_URL = `${BASE_WORKER_URL}/${ZONE1}/${POST_PUBLISHED}`
-const WORKER_ZONE1_POST_UPDATED_URL = `${BASE_WORKER_URL}/${ZONE1}/${POST_UPDATED}`
-const WORKER_ZONE2_POST_PUBLISHED_URL = `${BASE_WORKER_URL}/${ZONE2}/${POST_PUBLISHED}`
-const WORKER_ZONE2_POST_UPDATED_URL = `${BASE_WORKER_URL}/${ZONE2}/${POST_UPDATED}`
 
 const env = {
   CF_API_TOKEN: 'fake-token',
@@ -25,9 +27,28 @@ const baseRequestInit = {
   },
 }
 
-const postPublishedBody = await loadJsonFile(
-  './test/fixtures/postPublished.json',
-)
+const actionPostPublished = {
+    actionName: POST_PUBLISHED,
+    zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_PUBLISHED}`,
+    zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_PUBLISHED}`,
+    body: await loadJsonFile('./test/fixtures/postPublished.json'),
+}
+const actionPostUpdated = {
+    actionName: POST_UPDATED,
+    zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UPDATED}`,
+    zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UPDATED}`,
+    body: await loadJsonFile('./test/fixtures/postUpdated.json'),
+}
+
+
+function bodyIncludesUrls(body, urls) {
+  return arrayMembersAreEqual(body.files, urls)
+}
+
+function getPurgeCacheUrl(zone) {
+  return `/client/v4/zones/${zone}/purge_cache`
+}
+
 
 describe('Worker handler', function () {
   const methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
@@ -35,10 +56,10 @@ describe('Worker handler', function () {
     it(`should return 405 for ${method} request`, async function () {
       const init = { ...baseRequestInit, method: method }
       if (method !== 'GET' && method !== 'HEAD') {
-        init.body = JSON.stringify(postPublishedBody)
+        init.body = JSON.stringify(actionPostPublished.body)
       }
 
-      const request = new Request(WORKER_ZONE1_POST_PUBLISHED_URL, init)
+      const request = new Request(actionPostPublished.zone1Url, init)
       const response = await worker.fetch(request, env)
       response.status.should.equal(405)
     })
@@ -54,32 +75,104 @@ describe('Worker handler', function () {
   ]
   mediaTypes.forEach((mediaType) => {
     it(`should return 400 for ${mediaType} request`, async function () {
-      const request = new Request(WORKER_ZONE1_POST_PUBLISHED_URL, {
+      const request = new Request(actionPostPublished.zone1Url, {
         method: baseRequestInit.method,
         headers: { 'Content-Type': mediaType },
-        body: JSON.stringify(postPublishedBody),
+        body: JSON.stringify(actionPostPublished.body),
       })
       const response = await worker.fetch(request, env)
       response.status.should.equal(400)
     })
   })
 
-  it(`should return 400 for request without content type`, async function () {
-    const request = new Request(WORKER_ZONE1_POST_PUBLISHED_URL, {
+  it('should return 400 for request without content type', async function () {
+    const request = new Request(actionPostPublished.zone1Url, {
       method: baseRequestInit.method,
-      body: JSON.stringify(postPublishedBody),
+      body: JSON.stringify(actionPostPublished.body),
     })
     const response = await worker.fetch(request, env)
     response.status.should.equal(400)
   })
 
-  it(`should return 400 for request with invalid action`, async function () {
+  it('should return 400 for request with invalid action', async function () {
     const url = `${BASE_WORKER_URL}/${ZONE1}/invalidAction`
     const request = new Request(url, {
       ...baseRequestInit,
-      body: JSON.stringify(postPublishedBody),
+      body: JSON.stringify(actionPostPublished.body),
     })
     const response = await worker.fetch(request, env)
     response.status.should.equal(400)
   })
+
+  it('should return error status from Cloudflare API', async function () {
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1))
+      .reply(500)
+
+    const request = new Request(actionPostPublished.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(500)
+    scope.isDone().should.be.true
+  })
+
+
+  it('should include the Cloudflare API token in the request', async function () {
+    const scope = nock(BASE_CLOUDFLARE_API_URL, {
+      reqheaders: {
+        Authorization: `Bearer ${env.CF_API_TOKEN}`,
+      },
+    })
+      .post(getPurgeCacheUrl(ZONE1))
+      .reply(200)
+
+    const request = new Request(actionPostPublished.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  })
+
+  
+  it(`should purge the sitemap and root URLs for postPublished`, async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+    ]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1), body => bodyIncludesUrls(body, expectedUrls))
+      .reply(200)
+
+    const request = new Request(actionPostPublished.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  });
+
+  it(`should purge the sitemap and post URL for postUpdated`, async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      actionPostUpdated.body.post.current.url,
+    ]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1), body => bodyIncludesUrls(body, expectedUrls))
+      .reply(200)
+
+    const request = new Request(actionPostUpdated.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostUpdated.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  });
 })

@@ -4,7 +4,7 @@
       "id": "a3f1b2c4d5e6f7890abc1234",
       "uuid": "123e4567-e89b-12d3-a456-426614174000",
       "title": "Will Elder Scrolls VI ever get here?",
-      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "slug": "will-es6-ever-get-here",
       "mobiledoc": null,
       "html": "<p>Will it ever get here? It's hard to tell.</p><p>Should you play something else in the meantime? Absolutely!</p>",
       "comment_id": "a3f1b2c4d5e6f7890abc1234",
@@ -14,7 +14,7 @@
       "status": "published",
       "visibility": "public",
       "created_at": "2025-03-18T02:24:11.000Z",
-      "updated_at": "2025-03-18T02:25:45.000Z",
+      "updated_at": "2025-03-18T02:38:10.000Z",
       "published_at": "2025-03-18T02:25:45.000Z",
       "custom_excerpt": "Don't wait for it to have fun playing something else!",
       "canonical_url": null,
@@ -89,9 +89,8 @@
       "email_only": false
     },
     "previous": {
-      "status": "draft",
-      "updated_at": "2025-03-18T02:25:26.000Z",
-      "published_at": null
+      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "updated_at": "2025-03-18T02:25:45.000Z"
     }
   }
 }
