@@ -19,7 +19,7 @@ async function handleRequest(request, env) {
 
   // The URL is formed of ZONE_ID/ACTION.
   const path = url.pathname.split('/')
-  const zoneID = path[1]
+  const zoneId = path[1]
   const action = path[2]
 
   // Only POST HTTP are allowed.
@@ -34,52 +34,74 @@ async function handleRequest(request, env) {
 
   // We parse the body request from the WebHook.
   const body = await parseWebhookBody(request)
-  const postURL = new URL(body.post.current.url)
-  const rootURL = postURL.protocol + '//' + postURL.host
-  const sitemapURL = rootURL + '/sitemap-posts.xml'
+  const postUrl = new URL(body.post.current.url)
 
-  // We define the commmon URL to purge.
-  var urlToPurge = [sitemapURL]
+  const urlsToPurge = determineUrlsToPurgeForAction(action, postUrl)
 
-  // If a post has been published on Ghost CMS.
-  if (action == 'postPublished') {
-    urlToPurge.push(rootURL)
-  }
-
-  // If a published post has been updated.
-  else if (action == 'postUpdated') {
-    urlToPurge.push(postURL)
-  }
-
-  // Unkown request action
-  else {
+  // Unkown request action.
+  if (urlsToPurge === null) {
     return new Response('Bad Request', { status: 400 })
   }
 
   // We purge the URL from Cloudflare Cache.
-  const resp = await purgeURL(urlToPurge, zoneID, apiToken)
+  const resp = await purgeUrls(urlsToPurge, zoneId, apiToken)
 
   // The purge has failed.
   if (!resp.ok) {
-    console.log(`🧹 Purge Error : ${resp.statusText} - ${zoneID} > ${urlToPurge}`)
+    console.log(`🧹 Purge Error : ${resp.statusText} - ${zoneId} > ${urlsToPurge}`)
     return new Response(resp.statusText, { status: resp.status })
   }
 
   // Success
-  console.log(`🧹 Purged: ${zoneID} > ${urlToPurge}`)
+  console.log(`🧹 Purged: ${zoneId} > ${urlsToPurge}`)
   return new Response('OK', { status: 200 })
+}
+
+/**
+ * Determine the URLs to purge from the cache based on the action.
+ *
+ * @param {string} action The action from the WebHook
+ * @param {URL} postUrl The URL of the article
+ * @returns {Array} The URLs to purge from the cache
+ */
+function determineUrlsToPurgeForAction(action, postUrl) {
+  const rootUrl = postUrl.protocol + '//' + postUrl.host
+  const sitemapUrl = rootUrl + '/sitemap-posts.xml'
+
+  // Add the commmon URL to always purge.
+  const urlsToPurge = [ sitemapUrl ]
+
+  switch (action) {
+    case 'postPublished':
+      urlsToPurge.push(rootUrl)
+      break
+
+    case 'postUpdated':
+      urlsToPurge.push(postUrl)
+      break
+
+    case 'postUnpublished':
+      urlsToPurge.push(rootUrl, postUrl)
+      break
+      
+    default:
+      return null
+  }
+
+  return urlsToPurge
 }
 
 /**
  * Uses the Cloudflare API to purge a URL from the cache; can't use the Worker Cache API
  * because it only works per datacenter. Using the Cloudflare API ensures global purge.
  *
- * @param {Array} urlToPurge URL to purge from the cache
+ * @param {Array} urlsToPurge URLs to purge from the cache
+ * @param {string} zoneId The Cloudflare Zone ID
  * @returns {Promise<Response>} Response from Cloudflare API
  */
-async function purgeURL(urlToPurge, zoneID, apiToken) {
+async function purgeUrls(urlsToPurge, zoneId, apiToken) {
   // We convert the array to a json string.
-  const url = JSON.stringify(urlToPurge)
+  const urls = JSON.stringify(urlsToPurge)
 
   const requestInit = {
     method: 'POST',
@@ -87,11 +109,11 @@ async function purgeURL(urlToPurge, zoneID, apiToken) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiToken}`,
     },
-    body: `{"files":${url}}`,
+    body: `{"files":${urls}}`,
   }
 
   return await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${zoneID}/purge_cache`,
+    `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
     requestInit,
   )
 }

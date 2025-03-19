@@ -14,6 +14,7 @@ const ZONE1 = 'zone-1'
 const ZONE2 = 'zone-2'
 const POST_PUBLISHED = 'postPublished'
 const POST_UPDATED = 'postUpdated'
+const POST_UNPUBLISHED = 'postUnpublished'
 
 const env = {
   CF_API_TOKEN: 'fake-token',
@@ -37,6 +38,12 @@ const actionPostUpdated = {
   zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UPDATED}`,
   zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UPDATED}`,
   body: await loadJsonFile('./test/fixtures/postUpdated.json'),
+}
+const actionPostUnpublished = {
+  actionName: POST_UNPUBLISHED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UNPUBLISHED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UNPUBLISHED}`,
+  body: await loadJsonFile('./test/fixtures/postUnpublished.json'),
 }
 
 function bodyIncludesUrls(body, urls) {
@@ -147,7 +154,7 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it(`should purge the sitemap and post URL for postUpdated`, async function () {
+  it(`should purge the sitemap and post URLs for postUpdated`, async function () {
     const expectedUrls = [SITEMAP_URL, actionPostUpdated.body.post.current.url]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
@@ -157,6 +164,22 @@ describe('Worker handler', function () {
     const request = new Request(actionPostUpdated.zone1Url, {
       ...baseRequestInit,
       body: JSON.stringify(actionPostUpdated.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  })
+
+  it(`should purge the sitemap, root, and post URLs for postUnpublished`, async function () {
+    const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL, actionPostUnpublished.body.post.current.url]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .reply(200)
+
+    const request = new Request(actionPostUnpublished.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostUnpublished.body),
     })
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
