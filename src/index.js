@@ -34,9 +34,9 @@ async function handleRequest(request, env) {
 
   // We parse the body request from the WebHook.
   const body = await parseWebhookBody(request)
-  const postUrl = new URL(body.post.current.url)
+  const articleUrl = new URL(body.post ? body.post.current.url : body.page.current.url)
 
-  const urlsToPurge = determineUrlsToPurgeForAction(action, postUrl)
+  const urlsToPurge = determineUrlsToPurgeForAction(action, articleUrl)
 
   // Unkown request action.
   if (urlsToPurge === null) {
@@ -82,6 +82,15 @@ function determineUrlsToPurgeForAction(action, postUrl) {
 
     case 'postUnpublished':
       urlsToPurge.push(rootUrl, postUrl)
+      break
+    
+    case 'pagePublished':
+      // No need to do any more for published pages, as they are not in any listings.
+      break
+    
+    case 'pageUpdated':
+    case 'pageUnpublished':
+      urlsToPurge.push(postUrl)
       break
       
     default:

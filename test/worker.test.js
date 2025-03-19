@@ -15,6 +15,9 @@ const ZONE2 = 'zone-2'
 const POST_PUBLISHED = 'postPublished'
 const POST_UPDATED = 'postUpdated'
 const POST_UNPUBLISHED = 'postUnpublished'
+const PAGE_PUBLISHED = 'pagePublished'
+const PAGE_UPDATED = 'pageUpdated'
+const PAGE_UNPUBLISHED = 'pageUnpublished'
 
 const env = {
   CF_API_TOKEN: 'fake-token',
@@ -44,6 +47,24 @@ const actionPostUnpublished = {
   zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UNPUBLISHED}`,
   zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UNPUBLISHED}`,
   body: await loadJsonFile('./test/fixtures/postUnpublished.json'),
+}
+const actionPagePublished = {
+  actionName: PAGE_PUBLISHED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${PAGE_PUBLISHED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${PAGE_PUBLISHED}`,
+  body: await loadJsonFile('./test/fixtures/pagePublished.json'),
+}
+const actionPageUpdated = {
+  actionName: PAGE_UPDATED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${PAGE_UPDATED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${PAGE_UPDATED}`,
+  body: await loadJsonFile('./test/fixtures/pageUpdated.json'),
+}
+const actionPageUnpublished = {
+  actionName: PAGE_UNPUBLISHED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${PAGE_UNPUBLISHED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${PAGE_UNPUBLISHED}`,
+  body: await loadJsonFile('./test/fixtures/pageUnpublished.json'),
 }
 
 function bodyIncludesUrls(body, urls) {
@@ -184,5 +205,40 @@ describe('Worker handler', function () {
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
+  })
+
+  it(`should purge the sitemap URL for pagePublished`, async function () {
+    const expectedUrls = [SITEMAP_URL]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .reply(200)
+
+    const request = new Request(actionPagePublished.zone1Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPagePublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  })
+
+  const similarPageActions = [actionPageUpdated, actionPageUnpublished]
+  similarPageActions.forEach((action) => {
+    it(`should purge the sitemap and page URLs for ${action.actionName}`, async function () {
+      const expectedUrls = [SITEMAP_URL, action.body.page.current.url]
+
+      const scope = nock(BASE_CLOUDFLARE_API_URL)
+        .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+        .reply(200)
+
+      const request = new Request(action.zone1Url, {
+        ...baseRequestInit,
+        body: JSON.stringify(actionPageUpdated.body),
+      })
+      const response = await worker.fetch(request, env)
+      response.status.should.equal(200)
+      scope.isDone().should.be.true
+    })
   })
 })
