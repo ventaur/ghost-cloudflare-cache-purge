@@ -30,7 +30,7 @@
           "last_seen": "2025-03-18T02:19:14.000Z",
           "created_at": "2001-10-31T01:38:20.000Z",
           "updated_at": "2025-03-18T02:19:14.000Z",
-          "url": "https://blog.localhost/author/maiq/"
+          "url": "https://blog.example.com/author/maiq/"
         }
       ],
       "tags": [
@@ -43,7 +43,7 @@
           "visibility": "public",
           "created_at": "2020-02-25T03:11:51.000Z",
           "updated_at": "2020-02-25T03:11:51.000Z",
-          "url": "https://blog.localhost/tag/gaming/"
+          "url": "https://blog.example.com/tag/gaming/"
         },
         {
           "id": "d6e4f5a6b7c8d901ef012345",
@@ -54,7 +54,7 @@
           "visibility": "public",
           "created_at": "2024-05-18T22:06:51.000Z",
           "updated_at": "2024-05-18T22:06:51.000Z",
-          "url": "https://blog.localhost/tag/news/"
+          "url": "https://blog.example.com/tag/news/"
         }
       ],
       "primary_author": {
@@ -68,7 +68,7 @@
         "last_seen": "2025-03-18T02:19:14.000Z",
         "created_at": "2001-10-31T01:38:20.000Z",
         "updated_at": "2025-03-18T02:19:14.000Z",
-        "url": "https://blog.localhost/author/maiq/"
+        "url": "https://blog.example.com/author/maiq/"
       },
       "primary_tag": {
         "id": "c5d3e4f5a6b7c890ddef2345",
@@ -79,9 +79,9 @@
         "visibility": "public",
         "created_at": "2020-02-25T03:11:51.000Z",
         "updated_at": "2020-02-25T03:11:51.000Z",
-        "url": "https://blog.localhost/tag/gaming/"
+        "url": "https://blog.example.com/tag/gaming/"
       },
-      "url": "https://blog.localhost/will-elder-scrolls-vi-ever-get-here/",
+      "url": "https://blog.example.com/will-es6-ever-get-here/",
       "excerpt": "Don't wait for it to have fun playing something else!",
       "reading_time": 0,
       "feature_image_alt": null,
@@ -89,7 +89,7 @@
       "email_only": false
     },
     "previous": {
-      "slug": "will-elder-scrolls-vi-ever-get-here",
+      "status": "published",
       "updated_at": "2025-03-18T02:41:20.000Z"
     }
   }
