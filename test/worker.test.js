@@ -15,7 +15,6 @@ const ZONE2 = 'zone-2'
 const POST_PUBLISHED = 'postPublished'
 const POST_UPDATED = 'postUpdated'
 
-
 const env = {
   CF_API_TOKEN: 'fake-token',
 }
@@ -28,18 +27,17 @@ const baseRequestInit = {
 }
 
 const actionPostPublished = {
-    actionName: POST_PUBLISHED,
-    zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_PUBLISHED}`,
-    zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_PUBLISHED}`,
-    body: await loadJsonFile('./test/fixtures/postPublished.json'),
+  actionName: POST_PUBLISHED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_PUBLISHED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_PUBLISHED}`,
+  body: await loadJsonFile('./test/fixtures/postPublished.json'),
 }
 const actionPostUpdated = {
-    actionName: POST_UPDATED,
-    zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UPDATED}`,
-    zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UPDATED}`,
-    body: await loadJsonFile('./test/fixtures/postUpdated.json'),
+  actionName: POST_UPDATED,
+  zone1Url: `${BASE_WORKER_URL}/${ZONE1}/${POST_UPDATED}`,
+  zone2Url: `${BASE_WORKER_URL}/${ZONE2}/${POST_UPDATED}`,
+  body: await loadJsonFile('./test/fixtures/postUpdated.json'),
 }
-
 
 function bodyIncludesUrls(body, urls) {
   return arrayMembersAreEqual(body.files, urls)
@@ -48,7 +46,6 @@ function bodyIncludesUrls(body, urls) {
 function getPurgeCacheUrl(zone) {
   return `/client/v4/zones/${zone}/purge_cache`
 }
-
 
 describe('Worker handler', function () {
   const methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
@@ -105,9 +102,7 @@ describe('Worker handler', function () {
   })
 
   it('should return error status from Cloudflare API', async function () {
-    const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1))
-      .reply(500)
+    const scope = nock(BASE_CLOUDFLARE_API_URL).post(getPurgeCacheUrl(ZONE1)).reply(500)
 
     const request = new Request(actionPostPublished.zone1Url, {
       ...baseRequestInit,
@@ -117,7 +112,6 @@ describe('Worker handler', function () {
     response.status.should.equal(500)
     scope.isDone().should.be.true
   })
-
 
   it('should include the Cloudflare API token in the request', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL, {
@@ -137,15 +131,11 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  
   it(`should purge the sitemap and root URLs for postPublished`, async function () {
-    const expectedUrls = [
-      SITEMAP_URL,
-      BASE_GHOST_URL,
-    ]
+    const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), body => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPostPublished.zone1Url, {
@@ -155,16 +145,13 @@ describe('Worker handler', function () {
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
-  });
+  })
 
   it(`should purge the sitemap and post URL for postUpdated`, async function () {
-    const expectedUrls = [
-      SITEMAP_URL,
-      actionPostUpdated.body.post.current.url,
-    ]
+    const expectedUrls = [SITEMAP_URL, actionPostUpdated.body.post.current.url]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), body => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPostUpdated.zone1Url, {
@@ -174,5 +161,5 @@ describe('Worker handler', function () {
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
-  });
+  })
 })
