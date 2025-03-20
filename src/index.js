@@ -4,8 +4,16 @@ export default {
   },
 }
 
+// Fields that are related to post listings and should trigger a purge of the homepage.
+const listingRelatedFields = [
+  'published_at', 'visibility', 
+  'title', 'slug', 
+  'featured', 'feature_image', 'feature_image_alt', 'feature_image_caption', 
+  'custom_excerpt', 'plaintext'
+]
+
 /**
- * Get a request from Ghost CMS Webhook.
+ * Get a request from Ghost CMS webhook.
  *
  * @param {*} request The HTTP request Object
  * @param {*} env The environment variables
@@ -34,11 +42,9 @@ async function handleRequest(request, env) {
 
   // Parse the body request from the webhook.
   const body = await parseWebhookBody(request)
-  const articleUrl = new URL(body.post ? body.post.current.url : body.page.current.url)
-
-  const urlsToPurge = determineUrlsToPurgeForAction(action, articleUrl)
-
-  // Unkown request action.
+  
+  // Determine the URLs to purge from the cache based on the action.
+  const urlsToPurge = determineUrlsToPurgeForAction(action, body)
   if (urlsToPurge === null) {
     // Unkown request action
     return new Response('Bad Request', { status: 400 })
@@ -62,10 +68,12 @@ async function handleRequest(request, env) {
  * Determine the URLs to purge from the cache based on the action.
  *
  * @param {string} action The action from the webhook
- * @param {URL} articleUrl The URL of the article
+ * @param {Object} body The body of the request
  * @returns {Array} The URLs to purge from the cache
  */
-function determineUrlsToPurgeForAction(action, articleUrl) {
+function determineUrlsToPurgeForAction(action, body) {
+  const article = body.post ?? body.page
+  const articleUrl = new URL(article.current.url)
   const rootUrl = articleUrl.protocol + '//' + articleUrl.host
   const sitemapUrl = rootUrl + '/sitemap-posts.xml'
 
@@ -79,10 +87,13 @@ function determineUrlsToPurgeForAction(action, articleUrl) {
 
     case 'postUpdated':
       urlsToPurge.push(articleUrl)
+      if (listingRelatedFields.some(field => article.previous[field])) {
+        urlsToPurge.push(rootUrl)
+      }
       break
 
     case 'postUnpublished':
-      urlsToPurge.push(rootUrl, articleUrl)
+      urlsToPurge.push(articleUrl, rootUrl)
       break
     
     case 'pagePublished':
