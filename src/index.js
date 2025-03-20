@@ -87,6 +87,8 @@ function determineUrlsToPurgeForAction(action, body) {
 
     case 'postUpdated':
       urlsToPurge.push(articleUrl)
+
+      // If any of the listing-related fields have changed, we need to purge the homepage.
       if (listingRelatedFields.some(field => article.previous[field])) {
         urlsToPurge.push(rootUrl)
       }
