@@ -75,7 +75,7 @@ const listingRelatedFields = [
   'custom_excerpt', 'plaintext'
 ]
 
-function bodyIncludesUrls(body, urls) {
+function bodyFilesMatchUrls(body, urls) {
   return arrayMembersAreEqual(body.files, urls)
 }
 
@@ -175,7 +175,7 @@ describe('Worker handler', function () {
     const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPostPublished.zone1Url, {
@@ -191,7 +191,7 @@ describe('Worker handler', function () {
     const expectedUrls = [SITEMAP_URL, actionPostUpdated.body.post.current.url]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPostUpdated.zone1Url, {
@@ -208,7 +208,7 @@ describe('Worker handler', function () {
       const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL, actionPostUpdated.body.post.current.url]
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
-        .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+        .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
         .reply(200)
 
       actionPostUpdated.body.post.previous[field] = 'old value'
@@ -226,7 +226,7 @@ describe('Worker handler', function () {
     const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL, actionPostUnpublished.body.post.current.url]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPostUnpublished.zone1Url, {
@@ -242,7 +242,7 @@ describe('Worker handler', function () {
     const expectedUrls = [SITEMAP_URL]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
     const request = new Request(actionPagePublished.zone1Url, {
@@ -260,7 +260,7 @@ describe('Worker handler', function () {
       const expectedUrls = [SITEMAP_URL, action.body.page.current.url]
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
-        .post(getPurgeCacheUrl(ZONE1), (body) => bodyIncludesUrls(body, expectedUrls))
+        .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
         .reply(200)
 
       const request = new Request(action.zone1Url, {
