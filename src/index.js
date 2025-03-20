@@ -61,11 +61,11 @@ async function handleRequest(request, env) {
  * Determine the URLs to purge from the cache based on the action.
  *
  * @param {string} action The action from the WebHook
- * @param {URL} postUrl The URL of the article
+ * @param {URL} articleUrl The URL of the article
  * @returns {Array} The URLs to purge from the cache
  */
-function determineUrlsToPurgeForAction(action, postUrl) {
-  const rootUrl = postUrl.protocol + '//' + postUrl.host
+function determineUrlsToPurgeForAction(action, articleUrl) {
+  const rootUrl = articleUrl.protocol + '//' + articleUrl.host
   const sitemapUrl = rootUrl + '/sitemap-posts.xml'
 
   // Add the commmon URL to always purge.
@@ -77,11 +77,11 @@ function determineUrlsToPurgeForAction(action, postUrl) {
       break
 
     case 'postUpdated':
-      urlsToPurge.push(postUrl)
+      urlsToPurge.push(articleUrl)
       break
 
     case 'postUnpublished':
-      urlsToPurge.push(rootUrl, postUrl)
+      urlsToPurge.push(rootUrl, articleUrl)
       break
     
     case 'pagePublished':
@@ -90,7 +90,7 @@ function determineUrlsToPurgeForAction(action, postUrl) {
     
     case 'pageUpdated':
     case 'pageUnpublished':
-      urlsToPurge.push(postUrl)
+      urlsToPurge.push(articleUrl)
       break
       
     default:
