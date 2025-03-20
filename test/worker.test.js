@@ -76,6 +76,10 @@ function getPurgeCacheUrl(zone) {
 }
 
 describe('Worker handler', function () {
+  this.afterEach(() => {
+    nock.cleanAll()
+  })
+
   const methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
   methods.forEach((method) => {
     it(`should return 405 for ${method} request`, async function () {
