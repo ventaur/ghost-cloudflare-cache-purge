@@ -22,17 +22,17 @@ async function handleRequest(request, env) {
   const zoneId = path[1]
   const action = path[2]
 
-  // Only POST HTTP are allowed.
+  // Only POST method is allowed
   if (request.method !== 'POST') {
     return new Response(`Method ${request.method} not allowed.`, { status: 405 })
   }
 
-  // Only JSON POST are allowed
+  // Only JSON is allowed
   if (!contentType.includes('application/json')) {
     return new Response('Bad Request', { status: 400 })
   }
 
-  // We parse the body request from the WebHook.
+  // Parse the body request from the webhook.
   const body = await parseWebhookBody(request)
   const articleUrl = new URL(body.post ? body.post.current.url : body.page.current.url)
 
@@ -40,10 +40,11 @@ async function handleRequest(request, env) {
 
   // Unkown request action.
   if (urlsToPurge === null) {
+    // Unkown request action
     return new Response('Bad Request', { status: 400 })
   }
 
-  // We purge the URL from Cloudflare Cache.
+  // Purge the URLs from Cloudflare Cache.
   const resp = await purgeUrls(urlsToPurge, zoneId, apiToken)
 
   // The purge has failed.
@@ -60,7 +61,7 @@ async function handleRequest(request, env) {
 /**
  * Determine the URLs to purge from the cache based on the action.
  *
- * @param {string} action The action from the WebHook
+ * @param {string} action The action from the webhook
  * @param {URL} articleUrl The URL of the article
  * @returns {Array} The URLs to purge from the cache
  */
