@@ -84,14 +84,14 @@ function getPurgeCacheUrl(zone) {
   return `/client/v4/zones/${zone}/purge_cache`
 }
 
-describe('Worker handler', function () {
+describe('Worker handler should', function () {
   this.afterEach(() => {
     nock.cleanAll()
   })
 
   const methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
   methods.forEach((method) => {
-    it(`should return 405 for ${method} request`, async function () {
+    it(`return 405 for ${method} request`, async function () {
       const init = { ...baseRequestInit, method: method }
       if (method !== 'GET' && method !== 'HEAD') {
         init.body = JSON.stringify(actionPostPublished.body)
@@ -112,7 +112,7 @@ describe('Worker handler', function () {
     'application/ld+json',
   ]
   mediaTypes.forEach((mediaType) => {
-    it(`should return 400 for ${mediaType} request`, async function () {
+    it(`return 400 for ${mediaType} request`, async function () {
       const request = new Request(actionPostPublished.zone1Url, {
         method: baseRequestInit.method,
         headers: { 'Content-Type': mediaType },
@@ -123,7 +123,7 @@ describe('Worker handler', function () {
     })
   })
 
-  it('should return 400 for request without content type', async function () {
+  it('return 400 for request without content type', async function () {
     const request = new Request(actionPostPublished.zone1Url, {
       method: baseRequestInit.method,
       body: JSON.stringify(actionPostPublished.body),
@@ -132,7 +132,7 @@ describe('Worker handler', function () {
     response.status.should.equal(400)
   })
 
-  it('should return 400 for request with invalid action', async function () {
+  it('return 400 for request with invalid action', async function () {
     const url = `${BASE_WORKER_URL}/${ZONE1}/invalidAction`
     const request = new Request(url, {
       ...baseRequestInit,
@@ -142,7 +142,7 @@ describe('Worker handler', function () {
     response.status.should.equal(400)
   })
 
-  it('should return error status from Cloudflare API', async function () {
+  it('return error status from Cloudflare API', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL).post(getPurgeCacheUrl(ZONE1)).reply(500)
 
     const request = new Request(actionPostPublished.zone1Url, {
@@ -154,7 +154,7 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it('should include the Cloudflare API token in the request', async function () {
+  it('include the Cloudflare API token in the request', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL, {
       reqheaders: {
         Authorization: `Bearer ${env.CF_API_TOKEN}`,
@@ -172,7 +172,7 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it('should purge the sitemap and all listing URLs for postPublished', async function () {
+  it('purge sitemap and all listing URLs for postPublished', async function () {
     const expectedUrls = [
       SITEMAP_URL,
       BASE_GHOST_URL,
@@ -194,7 +194,7 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it('should purge the sitemap and post URLs for postUpdated with non-listing-related field change', async function () {
+  it('purge sitemap and post URLs for postUpdated with non-listing-related field change', async function () {
     const expectedUrls = [SITEMAP_URL, actionPostUpdated.body.post.current.url]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
@@ -211,7 +211,7 @@ describe('Worker handler', function () {
   })
 
   listingRelatedFields.forEach((field) => {
-    it(`should purge the sitemap and all listing URLs for postUpdated with ${field} field change`, async function () {
+    it(`purge sitemap and all listing URLs for postUpdated with ${field} field change`, async function () {
       const expectedUrls = [
         SITEMAP_URL,
         BASE_GHOST_URL,
@@ -238,7 +238,7 @@ describe('Worker handler', function () {
     })
   })
 
-  it('should purge the sitemap and all listing URLs for postUnpublished', async function () {
+  it('purge sitemap and all listing URLs for postUnpublished', async function () {
     const expectedUrls = [
       SITEMAP_URL,
       BASE_GHOST_URL,
@@ -261,7 +261,7 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it('should purge the sitemap URL for pagePublished', async function () {
+  it('purge sitemap URL for pagePublished', async function () {
     const expectedUrls = [SITEMAP_URL]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
@@ -279,7 +279,7 @@ describe('Worker handler', function () {
 
   const similarPageActions = [actionPageUpdated, actionPageUnpublished]
   similarPageActions.forEach((action) => {
-    it(`should purge the sitemap and page URLs for ${action.actionName}`, async function () {
+    it(`purge sitemap and page URLs for ${action.actionName}`, async function () {
       const expectedUrls = [SITEMAP_URL, action.body.page.current.url]
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
