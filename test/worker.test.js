@@ -72,7 +72,8 @@ const listingRelatedFields = [
   'published_at', 'visibility', 
   'title', 'slug', 
   'featured', 'feature_image', 'feature_image_alt', 'feature_image_caption', 
-  'custom_excerpt', 'plaintext'
+  'custom_excerpt', 'plaintext',
+  'authors', 'tags'
 ]
 
 function bodyFilesMatchUrls(body, urls) {
@@ -171,8 +172,14 @@ describe('Worker handler', function () {
     scope.isDone().should.be.true
   })
 
-  it('should purge the sitemap and root URLs for postPublished', async function () {
-    const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL]
+  it('should purge the sitemap and all listing URLs for postPublished', async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+      `${BASE_GHOST_URL}/author/maiq/`,
+      `${BASE_GHOST_URL}/tag/gaming/`,
+      `${BASE_GHOST_URL}/tag/news/`
+    ]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
@@ -204,14 +211,23 @@ describe('Worker handler', function () {
   })
 
   listingRelatedFields.forEach((field) => {
-    it(`should purge the sitemap, root, and post URLs for postUpdated with ${field} field change`, async function () {
-      const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL, actionPostUpdated.body.post.current.url]
+    it(`should purge the sitemap and all listing URLs for postUpdated with ${field} field change`, async function () {
+      const expectedUrls = [
+        SITEMAP_URL,
+        BASE_GHOST_URL,
+        actionPostUpdated.body.post.current.url,
+        `${BASE_GHOST_URL}/author/maiq/`,
+        `${BASE_GHOST_URL}/tag/gaming/`,
+        `${BASE_GHOST_URL}/tag/news/`
+      ]
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
         .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
         .reply(200)
 
+      actionPostUpdated.body.post.previous.other_field = 'something'
       actionPostUpdated.body.post.previous[field] = 'old value'
+
       const request = new Request(actionPostUpdated.zone1Url, {
         ...baseRequestInit,
         body: JSON.stringify(actionPostUpdated.body),
@@ -222,8 +238,15 @@ describe('Worker handler', function () {
     })
   })
 
-  it('should purge the sitemap, root, and post URLs for postUnpublished', async function () {
-    const expectedUrls = [SITEMAP_URL, BASE_GHOST_URL, actionPostUnpublished.body.post.current.url]
+  it('should purge the sitemap and all listing URLs for postUnpublished', async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+      actionPostUnpublished.body.post.current.url,
+      `${BASE_GHOST_URL}/author/maiq/`,
+      `${BASE_GHOST_URL}/tag/gaming/`,
+      `${BASE_GHOST_URL}/tag/news/`
+    ]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))

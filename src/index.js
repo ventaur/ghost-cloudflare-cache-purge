@@ -9,7 +9,8 @@ const listingRelatedFields = [
   'published_at', 'visibility', 
   'title', 'slug', 
   'featured', 'feature_image', 'feature_image_alt', 'feature_image_caption', 
-  'custom_excerpt', 'plaintext'
+  'custom_excerpt', 'plaintext',
+  'authors', 'tags'
 ]
 
 /**
@@ -78,11 +79,12 @@ function determineUrlsToPurgeForAction(action, body) {
   const sitemapUrl = rootUrl + '/sitemap-posts.xml'
 
   // Add the commmon URL to always purge.
-  const urlsToPurge = [ sitemapUrl ]
+  let urlsToPurge = [ sitemapUrl ]
 
   switch (action) {
     case 'postPublished':
       urlsToPurge.push(rootUrl)
+      urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
       break
 
     case 'postUpdated':
@@ -91,11 +93,13 @@ function determineUrlsToPurgeForAction(action, body) {
       // If any of the listing-related fields have changed, we need to purge the homepage.
       if (listingRelatedFields.some(field => article.previous[field])) {
         urlsToPurge.push(rootUrl)
+        urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
       }
       break
 
     case 'postUnpublished':
       urlsToPurge.push(articleUrl, rootUrl)
+      urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
       break
     
     case 'pagePublished':
@@ -112,6 +116,24 @@ function determineUrlsToPurgeForAction(action, body) {
   }
 
   return urlsToPurge
+}
+
+function determineAuthorUrlsToPurge(article) {
+  const extractUrls = (authors) => Array.isArray(authors) ? authors.map(author => author.url) : []
+  
+  const currentAuthors = extractUrls(article?.current?.authors)
+  const previousAuthors = extractUrls(article?.previous?.authors)
+
+  return currentAuthors.concat(previousAuthors)
+}
+
+function determineTagUrlsToPurge(article) {
+  const extractUrls = (tags) => Array.isArray(tags) ? tags.map(author => author.url) : []
+  
+  const currentTags = extractUrls(article?.current?.tags)
+  const previousTags = extractUrls(article?.previous?.tags)
+
+  return currentTags.concat(previousTags)
 }
 
 /**
