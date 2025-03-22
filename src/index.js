@@ -4,7 +4,7 @@ export default {
   },
 }
 
-// Fields that are related to post listings and should trigger a purge of the homepage.
+// Fields that are typically displayed on post listings and should trigger a purge of the listing URLs.
 const listingRelatedFields = [
   'published_at', 'visibility', 
   'title', 'slug', 
