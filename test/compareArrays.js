@@ -1,4 +1,4 @@
-export default function arrayMembersAreEqual(array1, array2) {
+export default function arrayItemsAreEqual(array1, array2) {
   if (array1.length !== array2.length) {
     return false
   }

@@ -2,7 +2,7 @@ import 'chai/register-should.js'
 import { loadJsonFile } from 'load-json-file'
 import nock from 'nock'
 
-import arrayMembersAreEqual from './compareArrays.js'
+import arrayItemsAreEqual from './compareArrays.js'
 import worker from '../src/index.js'
 
 const BASE_GHOST_URL = 'https://blog.example.com'
@@ -77,7 +77,7 @@ const listingRelatedFields = [
 ]
 
 function bodyFilesMatchUrls(body, urls) {
-  return arrayMembersAreEqual(body.files, urls)
+  return arrayItemsAreEqual(body.files, urls)
 }
 
 function getPurgeCacheUrl(zone) {
@@ -178,14 +178,14 @@ describe('Worker handler should', function () {
       BASE_GHOST_URL,
       `${BASE_GHOST_URL}/author/maiq/`,
       `${BASE_GHOST_URL}/tag/gaming/`,
-      `${BASE_GHOST_URL}/tag/news/`
+      `${BASE_GHOST_URL}/tag/news/`,
     ]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
-    const request = new Request(actionPostPublished.zone1Url, {
+    const request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=1', {
       ...baseRequestInit,
       body: JSON.stringify(actionPostPublished.body),
     })
@@ -218,7 +218,7 @@ describe('Worker handler should', function () {
         actionPostUpdated.body.post.current.url,
         `${BASE_GHOST_URL}/author/maiq/`,
         `${BASE_GHOST_URL}/tag/gaming/`,
-        `${BASE_GHOST_URL}/tag/news/`
+        `${BASE_GHOST_URL}/tag/news/`,
       ]
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
@@ -228,7 +228,7 @@ describe('Worker handler should', function () {
       actionPostUpdated.body.post.previous.other_field = 'something'
       actionPostUpdated.body.post.previous[field] = 'old value'
 
-      const request = new Request(actionPostUpdated.zone1Url, {
+      const request = new Request(actionPostUpdated.zone1Url + '?maxPageDepth=1', {
         ...baseRequestInit,
         body: JSON.stringify(actionPostUpdated.body),
       })
@@ -245,14 +245,14 @@ describe('Worker handler should', function () {
       actionPostUnpublished.body.post.current.url,
       `${BASE_GHOST_URL}/author/maiq/`,
       `${BASE_GHOST_URL}/tag/gaming/`,
-      `${BASE_GHOST_URL}/tag/news/`
+      `${BASE_GHOST_URL}/tag/news/`,
     ]
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200)
 
-    const request = new Request(actionPostUnpublished.zone1Url, {
+    const request = new Request(actionPostUnpublished.zone1Url + '?maxPageDepth=1', {
       ...baseRequestInit,
       body: JSON.stringify(actionPostUnpublished.body),
     })
@@ -294,5 +294,112 @@ describe('Worker handler should', function () {
       response.status.should.equal(200)
       scope.isDone().should.be.true
     })
+  })
+
+  const postActions = [actionPostPublished, actionPostUpdated, actionPostUnpublished]
+  postActions.forEach((action) => {
+    it('purge numbered pages of listing URLs for postPublished', async function () {
+      const expectedUrls = [
+        SITEMAP_URL,
+        BASE_GHOST_URL,
+        `${BASE_GHOST_URL}/page/2/`,
+        `${BASE_GHOST_URL}/page/3/`,
+        `${BASE_GHOST_URL}/page/4/`,
+        `${BASE_GHOST_URL}/page/5/`,
+        `${BASE_GHOST_URL}/author/maiq/`,
+        `${BASE_GHOST_URL}/author/maiq/page/2/`,
+        `${BASE_GHOST_URL}/author/maiq/page/3/`,
+        `${BASE_GHOST_URL}/author/maiq/page/4/`,
+        `${BASE_GHOST_URL}/author/maiq/page/5/`,
+        `${BASE_GHOST_URL}/tag/gaming/`,
+        `${BASE_GHOST_URL}/tag/gaming/page/2/`,
+        `${BASE_GHOST_URL}/tag/gaming/page/3/`,
+        `${BASE_GHOST_URL}/tag/gaming/page/4/`,
+        `${BASE_GHOST_URL}/tag/gaming/page/5/`,
+        `${BASE_GHOST_URL}/tag/news/`,
+        `${BASE_GHOST_URL}/tag/news/page/2/`,
+        `${BASE_GHOST_URL}/tag/news/page/3/`,
+        `${BASE_GHOST_URL}/tag/news/page/4/`,
+        `${BASE_GHOST_URL}/tag/news/page/5/`,
+      ]
+      if (action.actionName === POST_UPDATED || action.actionName === POST_UNPUBLISHED) {
+        expectedUrls.push(action.body.post.current.url)
+      }
+
+      const scope = nock(BASE_CLOUDFLARE_API_URL)
+        .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
+        .reply(200)
+
+      const request = new Request(action.zone2Url + '?maxPageDepth=5', {
+        ...baseRequestInit,
+        body: JSON.stringify(action.body),
+      })
+      const response = await worker.fetch(request, env)
+      response.status.should.equal(200)
+      scope.isDone().should.be.true
+    })
+  })
+
+  it('purge 3 numbered pages of listing URLs by default', async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+      `${BASE_GHOST_URL}/page/2/`,
+      `${BASE_GHOST_URL}/page/3/`,
+      `${BASE_GHOST_URL}/author/maiq/`,
+      `${BASE_GHOST_URL}/author/maiq/page/2/`,
+      `${BASE_GHOST_URL}/author/maiq/page/3/`,
+      `${BASE_GHOST_URL}/tag/gaming/`,
+      `${BASE_GHOST_URL}/tag/gaming/page/2/`,
+      `${BASE_GHOST_URL}/tag/gaming/page/3/`,
+      `${BASE_GHOST_URL}/tag/news/`,
+      `${BASE_GHOST_URL}/tag/news/page/2/`,
+      `${BASE_GHOST_URL}/tag/news/page/3/`,
+    ]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
+      .reply(200)
+
+    const request = new Request(actionPostPublished.zone2Url, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+    scope.isDone().should.be.true
+  })
+
+  it('purge no numbered pages of listing URLs when maxPageDepth is 0 or 1', async function () {
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+      `${BASE_GHOST_URL}/author/maiq/`,
+      `${BASE_GHOST_URL}/tag/gaming/`,
+      `${BASE_GHOST_URL}/tag/news/`,
+    ]
+
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
+      .reply(200)
+      .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
+      .reply(200)
+
+    let request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=0', {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    let response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+
+    request = new Request(actionPostPublished.zone2Url + '?maxPageDepth=1', {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+
+
+    scope.isDone().should.be.true
   })
 })
