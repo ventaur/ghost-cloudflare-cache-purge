@@ -83,8 +83,11 @@ function determineUrlsToPurgeForAction(action, body) {
 
   switch (action) {
     case 'postPublished':
-      urlsToPurge.push(rootUrl)
-      urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
+      urlsToPurge = urlsToPurge.concat(
+        rootUrl,
+        determineAuthorUrlsToPurge(article),
+        determineTagUrlsToPurge(article)
+      )
       break
 
     case 'postUpdated':
@@ -92,14 +95,21 @@ function determineUrlsToPurgeForAction(action, body) {
 
       // If any of the listing-related fields have changed, we need to purge the homepage.
       if (listingRelatedFields.some(field => article.previous[field])) {
-        urlsToPurge.push(rootUrl)
-        urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
+        urlsToPurge = urlsToPurge.concat(
+          rootUrl,
+          determineAuthorUrlsToPurge(article),
+          determineTagUrlsToPurge(article)
+        )
       }
       break
 
     case 'postUnpublished':
-      urlsToPurge.push(articleUrl, rootUrl)
-      urlsToPurge = urlsToPurge.concat(determineAuthorUrlsToPurge(article), determineTagUrlsToPurge(article))
+      urlsToPurge = urlsToPurge.concat(
+        articleUrl,
+        rootUrl,
+        determineAuthorUrlsToPurge(article),
+        determineTagUrlsToPurge(article)
+      )
       break
     
     case 'pagePublished':
