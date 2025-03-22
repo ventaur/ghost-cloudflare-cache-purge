@@ -84,9 +84,9 @@ function determineUrlsToPurgeForAction(action, body) {
   switch (action) {
     case 'postPublished':
       urlsToPurge = urlsToPurge.concat(
-        rootUrl,
+        determineMainListingUrlsToPurge(article, rootUrl),
         determineAuthorUrlsToPurge(article),
-        determineTagUrlsToPurge(article)
+        determineTagUrlsToPurge(article),
       )
       break
 
@@ -96,9 +96,9 @@ function determineUrlsToPurgeForAction(action, body) {
       // If any of the listing-related fields have changed, we need to purge the homepage.
       if (listingRelatedFields.some(field => article.previous[field])) {
         urlsToPurge = urlsToPurge.concat(
-          rootUrl,
+          determineMainListingUrlsToPurge(article, rootUrl),
           determineAuthorUrlsToPurge(article),
-          determineTagUrlsToPurge(article)
+          determineTagUrlsToPurge(article),
         )
       }
       break
@@ -106,9 +106,9 @@ function determineUrlsToPurgeForAction(action, body) {
     case 'postUnpublished':
       urlsToPurge = urlsToPurge.concat(
         articleUrl,
-        rootUrl,
+        determineMainListingUrlsToPurge(article, rootUrl),
         determineAuthorUrlsToPurge(article),
-        determineTagUrlsToPurge(article)
+        determineTagUrlsToPurge(article),
       )
       break
     
@@ -128,22 +128,26 @@ function determineUrlsToPurgeForAction(action, body) {
   return urlsToPurge
 }
 
-function determineAuthorUrlsToPurge(article) {
-  const extractUrls = (authors) => Array.isArray(authors) ? authors.map(author => author.url) : []
+function determineMainListingUrlsToPurge(article, rootUrl) {
+  // The majority of Ghost themes use the homepage as the main listing page.
+  return rootUrl;
+}
+
+function determineMetadataUrlsToPurge(article, metadataSelector) {
+  const extractUrls = (metadata) => Array.isArray(metadata) ? metadata.map(meta => meta.url) : []
   
-  const currentAuthors = extractUrls(article?.current?.authors)
-  const previousAuthors = extractUrls(article?.previous?.authors)
+  const currentAuthors = extractUrls(metadataSelector(article?.current))
+  const previousAuthors = extractUrls(metadataSelector(article?.previous))
 
   return currentAuthors.concat(previousAuthors)
 }
 
-function determineTagUrlsToPurge(article) {
-  const extractUrls = (tags) => Array.isArray(tags) ? tags.map(author => author.url) : []
-  
-  const currentTags = extractUrls(article?.current?.tags)
-  const previousTags = extractUrls(article?.previous?.tags)
+function determineAuthorUrlsToPurge(article) {
+  return determineMetadataUrlsToPurge(article, (state) => state?.authors)
+}
 
-  return currentTags.concat(previousTags)
+function determineTagUrlsToPurge(article) {
+  return determineMetadataUrlsToPurge(article, (state) => state?.tags)
 }
 
 /**
