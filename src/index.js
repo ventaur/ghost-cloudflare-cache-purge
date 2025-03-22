@@ -136,10 +136,10 @@ function determineMainListingUrlsToPurge(article, rootUrl) {
 function determineMetadataUrlsToPurge(article, metadataSelector) {
   const extractUrls = (metadata) => Array.isArray(metadata) ? metadata.map(meta => meta.url) : []
   
-  const currentAuthors = extractUrls(metadataSelector(article?.current))
-  const previousAuthors = extractUrls(metadataSelector(article?.previous))
+  const currentMetadataUrls = extractUrls(metadataSelector(article?.current))
+  const previousMetadataUrls = extractUrls(metadataSelector(article?.previous))
 
-  return currentAuthors.concat(previousAuthors)
+  return currentMetadataUrls.concat(previousMetadataUrls)
 }
 
 function determineAuthorUrlsToPurge(article) {
