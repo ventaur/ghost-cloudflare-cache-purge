@@ -78,17 +78,8 @@ async function handleRequest(request, env) {
   }
 
   // Purge the URLs from Cloudflare Cache.
-  const resp = await purgeUrls(urlsToPurge, zoneId, apiToken)
-
-  // The purge has failed.
-  if (!resp.ok) {
-    console.log(`🧹 Purge Error : ${resp.statusText} - ${zoneId} > ${urlsToPurge}`)
-    return new Response(resp.statusText, { status: resp.status })
-  }
-
-  // Success
-  console.log(`🧹 Purged: ${zoneId} > ${urlsToPurge}`)
-  return new Response('OK', { status: 200 })
+  const response = await purgeUrls(urlsToPurge, zoneId, apiToken)
+  return await buildResponse(response, zoneId, urlsToPurge)
 }
 
 /**
@@ -187,6 +178,25 @@ function determineAuthorUrlsToPurge(article, maxPageDepth) {
 
 function determineTagUrlsToPurge(article, maxPageDepth) {
   return determineMetadataUrlsToPurge(article, maxPageDepth, (state) => state?.tags)
+}
+
+async function buildResponse(response, zoneId, urlsToPurge) {
+  // The purge has failed.
+  if (!response.ok) {
+    console.log(`🧹 Purge Failed: ${response.statusText} - ${zoneId} > ${urlsToPurge}`)
+    return new Response(response.statusText, { status: response.status })
+  }
+
+  // The purge was unsuccessful.
+  const body = await response.json()
+  if (body.success !== true) {
+    console.log(`🧹 Purge Error: ${response.body.errors?.[0]?.message} - ${zoneId} > ${urlsToPurge}`)
+    return new Response('Purge failed', { status: 500 })
+  }
+
+  // Success!
+  console.log(`🧹 Purged: ${zoneId} > ${urlsToPurge}`)
+  return new Response('OK', { status: 200 })
 }
 
 /**

@@ -161,7 +161,7 @@ describe('Worker handler should', function () {
       },
     })
       .post(getPurgeCacheUrl(ZONE1))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPostPublished.zone1Url, {
       ...baseRequestInit,
@@ -183,7 +183,7 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=1', {
       ...baseRequestInit,
@@ -199,7 +199,7 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPostUpdated.zone1Url, {
       ...baseRequestInit,
@@ -223,7 +223,7 @@ describe('Worker handler should', function () {
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
         .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-        .reply(200)
+        .reply(200, { success: true })
 
       actionPostUpdated.body.post.previous.other_field = 'something'
       actionPostUpdated.body.post.previous[field] = 'old value'
@@ -250,7 +250,7 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPostUnpublished.zone1Url + '?maxPageDepth=1', {
       ...baseRequestInit,
@@ -266,7 +266,7 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPagePublished.zone1Url, {
       ...baseRequestInit,
@@ -284,7 +284,7 @@ describe('Worker handler should', function () {
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
         .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-        .reply(200)
+        .reply(200, { success: true })
 
       const request = new Request(action.zone1Url, {
         ...baseRequestInit,
@@ -328,7 +328,7 @@ describe('Worker handler should', function () {
 
       const scope = nock(BASE_CLOUDFLARE_API_URL)
         .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
-        .reply(200)
+        .reply(200, { success: true })
 
       const request = new Request(action.zone2Url + '?maxPageDepth=5', {
         ...baseRequestInit,
@@ -359,7 +359,7 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     const request = new Request(actionPostPublished.zone2Url, {
       ...baseRequestInit,
@@ -381,9 +381,9 @@ describe('Worker handler should', function () {
 
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
       .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
-      .reply(200)
+      .reply(200, { success: true })
 
     let request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=0', {
       ...baseRequestInit,
@@ -398,7 +398,6 @@ describe('Worker handler should', function () {
     })
     response = await worker.fetch(request, env)
     response.status.should.equal(200)
-
 
     scope.isDone().should.be.true
   })
