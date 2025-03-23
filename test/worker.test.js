@@ -76,6 +76,26 @@ const listingRelatedFields = [
   'authors', 'tags'
 ]
 
+
+function buildRequest(action, requestOverrides = {}) {
+  const requestInfo = {
+    url: action.zone1Url,
+    maxPageDepth: undefined,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(action.body),
+    ...requestOverrides
+  
+  }
+  if (requestInfo.maxPageDepth !== undefined) {
+    requestInfo.url += `?maxPageDepth=${requestInfo.maxPageDepth}`
+  }
+
+  return new Request(requestInfo.url, requestInfo)
+}
+
 function bodyFilesMatchUrls(body, urls) {
   return arrayItemsAreEqual(body.files, urls)
 }
@@ -92,12 +112,12 @@ describe('Worker handler should', function () {
   const methods = ['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
   methods.forEach((method) => {
     it(`return 405 for ${method} request`, async function () {
-      const init = { ...baseRequestInit, method: method }
-      if (method !== 'GET' && method !== 'HEAD') {
-        init.body = JSON.stringify(actionPostPublished.body)
+      const requestOverrides = { method: method }
+      if (method === 'GET' || method === 'HEAD') {
+        requestOverrides.body = undefined
       }
 
-      const request = new Request(actionPostPublished.zone1Url, init)
+      const request = buildRequest(actionPostPublished, requestOverrides)
       const response = await worker.fetch(request, env)
       response.status.should.equal(405)
     })
@@ -113,31 +133,21 @@ describe('Worker handler should', function () {
   ]
   mediaTypes.forEach((mediaType) => {
     it(`return 400 for ${mediaType} request`, async function () {
-      const request = new Request(actionPostPublished.zone1Url, {
-        method: baseRequestInit.method,
-        headers: { 'Content-Type': mediaType },
-        body: JSON.stringify(actionPostPublished.body),
-      })
+      const request = buildRequest(actionPostPublished, { headers: { 'Content-Type': mediaType } })
       const response = await worker.fetch(request, env)
       response.status.should.equal(400)
     })
   })
 
   it('return 400 for request without content type', async function () {
-    const request = new Request(actionPostPublished.zone1Url, {
-      method: baseRequestInit.method,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished, { headers: {} })
     const response = await worker.fetch(request, env)
     response.status.should.equal(400)
   })
 
   it('return 400 for request with invalid action', async function () {
     const url = `${BASE_WORKER_URL}/${ZONE1}/invalidAction`
-    const request = new Request(url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished, { url })
     const response = await worker.fetch(request, env)
     response.status.should.equal(400)
   })
@@ -145,10 +155,7 @@ describe('Worker handler should', function () {
   it('return error status from Cloudflare API', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL).post(getPurgeCacheUrl(ZONE1)).reply(500)
 
-    const request = new Request(actionPostPublished.zone1Url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished)
     const response = await worker.fetch(request, env)
     response.status.should.equal(500)
     scope.isDone().should.be.true
@@ -163,10 +170,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE1))
       .reply(200, { success: true })
 
-    const request = new Request(actionPostPublished.zone1Url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished)
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -185,10 +189,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    const request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=1', {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished, { maxPageDepth: 1 })
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -201,10 +202,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    const request = new Request(actionPostUpdated.zone1Url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostUpdated.body),
-    })
+    const request = buildRequest(actionPostUpdated)
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -228,10 +226,7 @@ describe('Worker handler should', function () {
       actionPostUpdated.body.post.previous.other_field = 'something'
       actionPostUpdated.body.post.previous[field] = 'old value'
 
-      const request = new Request(actionPostUpdated.zone1Url + '?maxPageDepth=1', {
-        ...baseRequestInit,
-        body: JSON.stringify(actionPostUpdated.body),
-      })
+      const request = buildRequest(actionPostUpdated, { maxPageDepth: 1 })
       const response = await worker.fetch(request, env)
       response.status.should.equal(200)
       scope.isDone().should.be.true
@@ -252,10 +247,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    const request = new Request(actionPostUnpublished.zone1Url + '?maxPageDepth=1', {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostUnpublished.body),
-    })
+    const request = buildRequest(actionPostUnpublished, { maxPageDepth: 1 })
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -268,10 +260,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    const request = new Request(actionPagePublished.zone1Url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPagePublished.body),
-    })
+    const request = buildRequest(actionPagePublished)
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -286,10 +275,7 @@ describe('Worker handler should', function () {
         .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
         .reply(200, { success: true })
 
-      const request = new Request(action.zone1Url, {
-        ...baseRequestInit,
-        body: JSON.stringify(actionPageUpdated.body),
-      })
+      const request = buildRequest(action)
       const response = await worker.fetch(request, env)
       response.status.should.equal(200)
       scope.isDone().should.be.true
@@ -298,7 +284,7 @@ describe('Worker handler should', function () {
 
   const postActions = [actionPostPublished, actionPostUpdated, actionPostUnpublished]
   postActions.forEach((action) => {
-    it('purge numbered pages of listing URLs for postPublished', async function () {
+    it(`purge numbered pages of listing URLs for ${action.actionName}`, async function () {
       const expectedUrls = [
         SITEMAP_URL,
         BASE_GHOST_URL,
@@ -330,10 +316,7 @@ describe('Worker handler should', function () {
         .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
         .reply(200, { success: true })
 
-      const request = new Request(action.zone2Url + '?maxPageDepth=5', {
-        ...baseRequestInit,
-        body: JSON.stringify(action.body),
-      })
+      const request = buildRequest(action, { url: action.zone2Url, maxPageDepth: 5 })
       const response = await worker.fetch(request, env)
       response.status.should.equal(200)
       scope.isDone().should.be.true
@@ -361,10 +344,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    const request = new Request(actionPostPublished.zone2Url, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    const request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url })
     const response = await worker.fetch(request, env)
     response.status.should.equal(200)
     scope.isDone().should.be.true
@@ -386,10 +366,7 @@ describe('Worker handler should', function () {
       .post(getPurgeCacheUrl(ZONE2), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
 
-    let request = new Request(actionPostPublished.zone1Url + '?maxPageDepth=0', {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    let request = buildRequest(actionPostPublished, { maxPageDepth: 0 })
     let response = await worker.fetch(request, env)
     response.status.should.equal(200)
 
@@ -435,10 +412,7 @@ describe('Worker handler should', function () {
         .times(expectedRequests)
         .reply(200, { success: true })
 
-      const request = new Request(`${actionPostPublished.zone2Url}?maxPageDepth=${maxPageDepth}`, {
-        ...baseRequestInit,
-        body: JSON.stringify(actionPostPublished.body),
-      })
+      const request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url, maxPageDepth })
       const response = await worker.fetch(request, Object.assign({}, env, enterpriseEnv))
       response.status.should.equal(200)
 
