@@ -379,6 +379,7 @@ describe('Worker handler should', function () {
       `${BASE_GHOST_URL}/tag/news/`,
     ]
 
+    // We're going to call the worker twice, once with maxPageDepth=0 and once with maxPageDepth=1.
     const scope = nock(BASE_CLOUDFLARE_API_URL)
       .post(getPurgeCacheUrl(ZONE1), (body) => bodyFilesMatchUrls(body, expectedUrls))
       .reply(200, { success: true })
@@ -400,5 +401,46 @@ describe('Worker handler should', function () {
     response.status.should.equal(200)
 
     scope.isDone().should.be.true
+  })
+
+  it('purge more than 30 URLs by making multiple requests', async function () {
+    // Use a maxPageDepth of 10 to generate more than 30 URLs for the test.
+    const maxPageDepth = 10
+    const expectedUrls = [
+      SITEMAP_URL,
+      BASE_GHOST_URL,
+      `${BASE_GHOST_URL}/author/maiq/`,
+      `${BASE_GHOST_URL}/tag/gaming/`,
+      `${BASE_GHOST_URL}/tag/news/`,
+    ].concat(
+      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/page/${i + 2}/`),
+      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/author/maiq/page/${i + 2}/`),
+      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/gaming/page/${i + 2}/`),
+      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/news/page/${i + 2}/`),
+    )
+
+    const actualUrls = []
+
+    // We expect the worker to make two requests to the Cloudflare API, each with a maximum of 30 URLs.
+    // We'll capture the URLs sent in each request to compare them against the expected URLs.
+    const scope = nock(BASE_CLOUDFLARE_API_URL)
+      .post(getPurgeCacheUrl(ZONE2), (body) => actualUrls.push(...body.files))
+      .reply(200, { success: true })
+      .post(getPurgeCacheUrl(ZONE2), (body) => actualUrls.push(...body.files))
+      .reply(200, { success: true })
+
+    const request = new Request(`${actionPostPublished.zone2Url}?maxPageDepth=${maxPageDepth}`, {
+      ...baseRequestInit,
+      body: JSON.stringify(actionPostPublished.body),
+    })
+    const response = await worker.fetch(request, env)
+    response.status.should.equal(200)
+
+    scope.isDone().should.be.true
+
+    // Sort the URLs to ensure the order doesn't affect the comparison.
+    expectedUrls.sort()
+    actualUrls.sort()
+    actualUrls.should.be.deep.equal(expectedUrls)
   })
 })

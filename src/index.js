@@ -4,7 +4,11 @@ export default {
   },
 }
 
-const DEFAULT_MAX_PAGE_DEPTH = 3 // Default max page depth for listing URLs to purge
+// The Free Cloudflare plan has a limit of 30 URLs per purge request.
+const MAX_FREE_PURGE_CALL_URLS = 30
+
+// Default max page depth for listing URLs to purge
+const DEFAULT_MAX_PAGE_DEPTH = 3
 
 // Fields that are typically displayed on post listings and should trigger a purge of the listing URLs.
 const listingRelatedFields = [
@@ -208,22 +212,53 @@ async function buildResponse(response, zoneId, urlsToPurge) {
  * @returns {Promise<Response>} Response from Cloudflare API
  */
 async function purgeUrls(urlsToPurge, zoneId, apiToken) {
-  // We convert the array to a json string.
-  const urls = JSON.stringify(urlsToPurge)
-
-  const requestInit = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiToken}`,
-    },
-    body: `{"files":${urls}}`,
+  // Split the purge calls into multiple requests as batches of the max allowed per call.
+  const urlsBatches = []
+  for (let i = 0; i < urlsToPurge.length; i += MAX_FREE_PURGE_CALL_URLS) {
+    urlsBatches.push(urlsToPurge.slice(i, i + MAX_FREE_PURGE_CALL_URLS))
   }
 
-  return await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
-    requestInit,
+  // Purge each batch of URLs.
+  const responses = await Promise.all(
+    urlsBatches.map(urlsToPurge => {
+      const urls = JSON.stringify(urlsToPurge)
+      const requestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiToken}`,
+        },
+        body: `{"files":${urls}}`,
+      }
+
+      return fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
+        requestInit,
+      )
+    })
   )
+
+  // Return a response that merges all the responses from the batches.
+  let status = 200
+  let body = {
+    success: true,
+    errors: [],
+    messages: [],
+  }
+  for (const res of responses) {
+    if (!res.ok) {
+      status = res.status
+      continue
+    }
+
+    // Merge the JSON responses into a single response.
+    const json = await res.json()
+    body.success = body.success && json.success
+    body.errors = body.errors.concat(json.errors || [])
+    body.messages = body.messages.concat(json.messages || [])
+  }
+
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
 /**
