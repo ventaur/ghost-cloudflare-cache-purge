@@ -403,44 +403,51 @@ describe('Worker handler should', function () {
     scope.isDone().should.be.true
   })
 
-  it('purge more than 30 URLs by making multiple requests', async function () {
-    // Use a maxPageDepth of 10 to generate more than 30 URLs for the test.
-    const maxPageDepth = 10
-    const expectedUrls = [
-      SITEMAP_URL,
-      BASE_GHOST_URL,
-      `${BASE_GHOST_URL}/author/maiq/`,
-      `${BASE_GHOST_URL}/tag/gaming/`,
-      `${BASE_GHOST_URL}/tag/news/`,
-    ].concat(
-      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/page/${i + 2}/`),
-      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/author/maiq/page/${i + 2}/`),
-      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/gaming/page/${i + 2}/`),
-      Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/news/page/${i + 2}/`),
-    )
+  const urlsPerCallScenarios = [
+    { env: { CF_IS_ENTERPRISE: 'true' }, expectedRequests: 1 },
+    { env: { CF_IS_ENTERPRISE: 'TRUE' }, expectedRequests: 1 },
+    { env: { CF_IS_ENTERPRISE: '1' }, expectedRequests: 1 },
+    { env: {}, expectedRequests: 2 },
+  ]
+  urlsPerCallScenarios.forEach(({ env: enterpriseEnv, expectedRequests }) => {
+    it(`purge more than 30 URLs by making ${expectedRequests === 1 ? 'a single request' : 'multiple requests'} for env.CF_IS_ENTERPRISE '${enterpriseEnv?.CF_IS_ENTERPRISE}'`, async function () {
+      // Use a maxPageDepth of 10 to generate more than 30 URLs for the test.
+      const maxPageDepth = 10
+      const expectedUrls = [
+        SITEMAP_URL,
+        BASE_GHOST_URL,
+        `${BASE_GHOST_URL}/author/maiq/`,
+        `${BASE_GHOST_URL}/tag/gaming/`,
+        `${BASE_GHOST_URL}/tag/news/`,
+      ].concat(
+        Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/page/${i + 2}/`),
+        Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/author/maiq/page/${i + 2}/`),
+        Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/gaming/page/${i + 2}/`),
+        Array.from({ length: maxPageDepth - 1 }, (_, i) => `${BASE_GHOST_URL}/tag/news/page/${i + 2}/`),
+      )
 
-    const actualUrls = []
+      const actualUrls = []
 
-    // We expect the worker to make two requests to the Cloudflare API, each with a maximum of 30 URLs.
-    // We'll capture the URLs sent in each request to compare them against the expected URLs.
-    const scope = nock(BASE_CLOUDFLARE_API_URL)
-      .post(getPurgeCacheUrl(ZONE2), (body) => actualUrls.push(...body.files))
-      .reply(200, { success: true })
-      .post(getPurgeCacheUrl(ZONE2), (body) => actualUrls.push(...body.files))
-      .reply(200, { success: true })
+      // We expect the worker to make two requests to the Cloudflare API, each with a maximum of 30 URLs.
+      // We'll capture the URLs sent in each request to compare them against the expected URLs.
+      const scope = nock(BASE_CLOUDFLARE_API_URL)
+        .post(getPurgeCacheUrl(ZONE2), (body) => actualUrls.push(...body.files))
+        .times(expectedRequests)
+        .reply(200, { success: true })
 
-    const request = new Request(`${actionPostPublished.zone2Url}?maxPageDepth=${maxPageDepth}`, {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
+      const request = new Request(`${actionPostPublished.zone2Url}?maxPageDepth=${maxPageDepth}`, {
+        ...baseRequestInit,
+        body: JSON.stringify(actionPostPublished.body),
+      })
+      const response = await worker.fetch(request, Object.assign({}, env, enterpriseEnv))
+      response.status.should.equal(200)
+
+      scope.isDone().should.be.true
+
+      // Sort the URLs to ensure the order doesn't affect the comparison.
+      expectedUrls.sort()
+      actualUrls.sort()
+      actualUrls.should.be.deep.equal(expectedUrls)
     })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-
-    scope.isDone().should.be.true
-
-    // Sort the URLs to ensure the order doesn't affect the comparison.
-    expectedUrls.sort()
-    actualUrls.sort()
-    actualUrls.should.be.deep.equal(expectedUrls)
   })
 })

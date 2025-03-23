@@ -1,11 +1,12 @@
 export default {
   async fetch(request, env) {
     return handleRequest(request, env)
-  },
+  }
 }
 
-// The Free Cloudflare plan has a limit of 30 URLs per purge request.
-const MAX_FREE_PURGE_CALL_URLS = 30
+// Cloudflare Enterprise plans have a different limit for the number of URLs per purge request.
+const MAX_PERSONAL_PURGE_CALL_URLS = 30
+const MAX_ENTERPRISE_PURGE_CALL_URLS = 500
 
 // Default max page depth for listing URLs to purge
 const DEFAULT_MAX_PAGE_DEPTH = 3
@@ -45,6 +46,7 @@ const listingRelatedFields = [
  */
 async function handleRequest(request, env) {
   const apiToken = env.CF_API_TOKEN
+  const isEnterprise = ['true', 'TRUE', '1'].includes(env.CF_IS_ENTERPRISE)
 
   const { headers } = request
   const contentType = headers.get('content-type') || ''
@@ -82,7 +84,7 @@ async function handleRequest(request, env) {
   }
 
   // Purge the URLs from Cloudflare Cache.
-  const response = await purgeUrls(urlsToPurge, zoneId, apiToken)
+  const response = await purgeUrls(urlsToPurge, zoneId, apiToken, isEnterprise ? MAX_ENTERPRISE_PURGE_CALL_URLS : MAX_PERSONAL_PURGE_CALL_URLS)
   return await buildResponse(response, zoneId, urlsToPurge)
 }
 
@@ -211,11 +213,11 @@ async function buildResponse(response, zoneId, urlsToPurge) {
  * @param {string} zoneId The Cloudflare Zone ID
  * @returns {Promise<Response>} Response from Cloudflare API
  */
-async function purgeUrls(urlsToPurge, zoneId, apiToken) {
+async function purgeUrls(urlsToPurge, zoneId, apiToken, maxUrlsPerCall = MAX_PERSONAL_PURGE_CALL_URLS) {
   // Split the purge calls into multiple requests as batches of the max allowed per call.
   const urlsBatches = []
-  for (let i = 0; i < urlsToPurge.length; i += MAX_FREE_PURGE_CALL_URLS) {
-    urlsBatches.push(urlsToPurge.slice(i, i + MAX_FREE_PURGE_CALL_URLS))
+  for (let i = 0; i < urlsToPurge.length; i += maxUrlsPerCall) {
+    urlsBatches.push(urlsToPurge.slice(i, i + maxUrlsPerCall))
   }
 
   // Purge each batch of URLs.
