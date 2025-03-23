@@ -370,10 +370,7 @@ describe('Worker handler should', function () {
     let response = await worker.fetch(request, env)
     response.status.should.equal(200)
 
-    request = new Request(actionPostPublished.zone2Url + '?maxPageDepth=1', {
-      ...baseRequestInit,
-      body: JSON.stringify(actionPostPublished.body),
-    })
+    request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url, maxPageDepth: 1 })
     response = await worker.fetch(request, env)
     response.status.should.equal(200)
 
