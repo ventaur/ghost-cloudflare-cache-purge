@@ -19,15 +19,8 @@ const PAGE_PUBLISHED = 'pagePublished'
 const PAGE_UPDATED = 'pageUpdated'
 const PAGE_UNPUBLISHED = 'pageUnpublished'
 
-const env = {
+const ENV = {
   CF_API_TOKEN: 'fake-token',
-}
-
-const baseRequestInit = {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
 }
 
 const actionPostPublished = {
@@ -104,6 +97,20 @@ function getPurgeCacheUrl(zone) {
   return `/client/v4/zones/${zone}/purge_cache`
 }
 
+async function actAndAssertResponse(request, expectedStatus, additionalEnv = {}) {
+  if (expectedStatus === undefined || !Number.isInteger(expectedStatus) || expectedStatus < 200 || expectedStatus > 599) {
+    throw new Error('expectedStatus must be a valid HTTP status code (200-599).')
+  }
+
+  const env = {
+    ...ENV,
+    ...additionalEnv
+  }
+
+  const response = await worker.fetch(request, env)
+  response.status.should.equal(expectedStatus)
+}
+
 describe('Worker handler should', function () {
   this.afterEach(() => {
     nock.cleanAll()
@@ -118,8 +125,7 @@ describe('Worker handler should', function () {
       }
 
       const request = buildRequest(actionPostPublished, requestOverrides)
-      const response = await worker.fetch(request, env)
-      response.status.should.equal(405)
+      await actAndAssertResponse(request, 405)
     })
   })
 
@@ -134,46 +140,39 @@ describe('Worker handler should', function () {
   mediaTypes.forEach((mediaType) => {
     it(`return 400 for ${mediaType} request`, async function () {
       const request = buildRequest(actionPostPublished, { headers: { 'Content-Type': mediaType } })
-      const response = await worker.fetch(request, env)
-      response.status.should.equal(400)
+      await actAndAssertResponse(request, 400)
     })
   })
 
   it('return 400 for request without content type', async function () {
     const request = buildRequest(actionPostPublished, { headers: {} })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(400)
+    await actAndAssertResponse(request, 400)
   })
 
   it('return 400 for request with invalid action', async function () {
     const url = `${BASE_WORKER_URL}/${ZONE1}/invalidAction`
     const request = buildRequest(actionPostPublished, { url })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(400)
+    await actAndAssertResponse(request, 400)
   })
 
   it('return error status from Cloudflare API', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL).post(getPurgeCacheUrl(ZONE1)).reply(500)
 
     const request = buildRequest(actionPostPublished)
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(500)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 500, scope)
   })
 
   it('include the Cloudflare API token in the request', async function () {
     const scope = nock(BASE_CLOUDFLARE_API_URL, {
       reqheaders: {
-        Authorization: `Bearer ${env.CF_API_TOKEN}`,
+        Authorization: `Bearer ${ENV.CF_API_TOKEN}`,
       },
     })
       .post(getPurgeCacheUrl(ZONE1))
       .reply(200, { success: true })
 
     const request = buildRequest(actionPostPublished)
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200, scope)
   })
 
   it('purge sitemap and all listing URLs for postPublished', async function () {
@@ -190,9 +189,7 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     const request = buildRequest(actionPostPublished, { maxPageDepth: 1 })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200, scope)
   })
 
   it('purge sitemap and post URLs for postUpdated with non-listing-related field change', async function () {
@@ -203,9 +200,7 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     const request = buildRequest(actionPostUpdated)
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200, scope)
   })
 
   listingRelatedFields.forEach((field) => {
@@ -227,9 +222,8 @@ describe('Worker handler should', function () {
       actionPostUpdated.body.post.previous[field] = 'old value'
 
       const request = buildRequest(actionPostUpdated, { maxPageDepth: 1 })
-      const response = await worker.fetch(request, env)
-      response.status.should.equal(200)
-      scope.isDone().should.be.true
+      await actAndAssertResponse(request, 200)
+      scope.done()
     })
   })
 
@@ -248,9 +242,8 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     const request = buildRequest(actionPostUnpublished, { maxPageDepth: 1 })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200)
+    scope.done()
   })
 
   it('purge sitemap URL for pagePublished', async function () {
@@ -261,9 +254,8 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     const request = buildRequest(actionPagePublished)
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200)
+    scope.done()
   })
 
   const similarPageActions = [actionPageUpdated, actionPageUnpublished]
@@ -276,9 +268,8 @@ describe('Worker handler should', function () {
         .reply(200, { success: true })
 
       const request = buildRequest(action)
-      const response = await worker.fetch(request, env)
-      response.status.should.equal(200)
-      scope.isDone().should.be.true
+      await actAndAssertResponse(request, 200)
+      scope.done()
     })
   })
 
@@ -317,9 +308,8 @@ describe('Worker handler should', function () {
         .reply(200, { success: true })
 
       const request = buildRequest(action, { url: action.zone2Url, maxPageDepth: 5 })
-      const response = await worker.fetch(request, env)
-      response.status.should.equal(200)
-      scope.isDone().should.be.true
+      await actAndAssertResponse(request, 200)
+      scope.done()
     })
   })
 
@@ -345,9 +335,8 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     const request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url })
-    const response = await worker.fetch(request, env)
-    response.status.should.equal(200)
-    scope.isDone().should.be.true
+    await actAndAssertResponse(request, 200)
+    scope.done()
   })
 
   it('purge no numbered pages of listing URLs when maxPageDepth is 0 or 1', async function () {
@@ -367,14 +356,12 @@ describe('Worker handler should', function () {
       .reply(200, { success: true })
 
     let request = buildRequest(actionPostPublished, { maxPageDepth: 0 })
-    let response = await worker.fetch(request, env)
-    response.status.should.equal(200)
+    await actAndAssertResponse(request, 200)
 
     request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url, maxPageDepth: 1 })
-    response = await worker.fetch(request, env)
-    response.status.should.equal(200)
+    await actAndAssertResponse(request, 200)
 
-    scope.isDone().should.be.true
+    scope.done()
   })
 
   const urlsPerCallScenarios = [
@@ -383,8 +370,8 @@ describe('Worker handler should', function () {
     { env: { CF_IS_ENTERPRISE: '1' }, expectedRequests: 1 },
     { env: {}, expectedRequests: 2 },
   ]
-  urlsPerCallScenarios.forEach(({ env: enterpriseEnv, expectedRequests }) => {
-    it(`purge more than 30 URLs by making ${expectedRequests === 1 ? 'a single request' : 'multiple requests'} for env.CF_IS_ENTERPRISE '${enterpriseEnv?.CF_IS_ENTERPRISE}'`, async function () {
+  urlsPerCallScenarios.forEach(({ env, expectedRequests }) => {
+    it(`purge more than 30 URLs by making ${expectedRequests === 1 ? 'a single request' : 'multiple requests'} for env.CF_IS_ENTERPRISE '${env?.CF_IS_ENTERPRISE}'`, async function () {
       // Use a maxPageDepth of 10 to generate more than 30 URLs for the test.
       const maxPageDepth = 10
       const expectedUrls = [
@@ -410,10 +397,8 @@ describe('Worker handler should', function () {
         .reply(200, { success: true })
 
       const request = buildRequest(actionPostPublished, { url: actionPostPublished.zone2Url, maxPageDepth })
-      const response = await worker.fetch(request, Object.assign({}, env, enterpriseEnv))
-      response.status.should.equal(200)
-
-      scope.isDone().should.be.true
+      await actAndAssertResponse(request, 200, env)
+      scope.done()
 
       // Sort the URLs to ensure the order doesn't affect the comparison.
       expectedUrls.sort()
