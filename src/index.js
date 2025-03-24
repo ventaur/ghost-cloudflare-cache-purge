@@ -102,8 +102,9 @@ async function handleRequest(request, env) {
  */
 function determineUrlsToPurgeForAction(action, body, maxPageDepth) {
   const article = body.post ?? body.page
-  const articleUrl = new URL(article.current.url)
-  const rootUrl = articleUrl.protocol + '//' + articleUrl.host
+  const articleUrlObject = new URL(article.current.url)
+  const articleUrl = articleUrlObject.toString()
+  const rootUrl = articleUrlObject.protocol + '//' + articleUrlObject.host
   const sitemapUrl = rootUrl + '/sitemap-posts.xml'
 
   // Add the commmon URL to always purge.
