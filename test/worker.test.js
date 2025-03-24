@@ -187,6 +187,7 @@ describe('Worker handler should', function () {
 
   // NOTE: There is a bug in nock that prevents it from testing request headers for a match.
   // So, there is no way to make this test fail appropriately, even if you change the expected header name or value; it always passes.
+  // https://github.com/nock/nock/issues/2545
   it('include the Cloudflare API token in the request', async function () {
     const options = {
       reqHeaders: {
