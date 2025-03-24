@@ -45,8 +45,12 @@ const listingRelatedFields = [
  * @returns An HTTP Response
  */
 async function handleRequest(request, env) {
-  const apiToken = env.CF_API_TOKEN
+  const apiToken = env?.CF_API_TOKEN
   const isEnterprise = ['true', 'TRUE', '1'].includes(env.CF_IS_ENTERPRISE)
+
+  if (!apiToken) {
+    return new Response('Missing Cloudflare API token', { status: 500 })
+  }
 
   const { headers } = request
   const contentType = headers.get('content-type') || ''
