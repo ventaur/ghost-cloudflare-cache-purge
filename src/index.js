@@ -213,6 +213,8 @@ async function buildResponse(response, zoneId, urlsToPurge) {
 /**
  * Uses the Cloudflare API to purge a URL from the cache; can't use the Worker Cache API
  * because it only works per datacenter. Using the Cloudflare API ensures global purge.
+ * 
+ * TODO: We may add purging by prefix for Enterprise users to handl all the pagination much easier.
  *
  * @param {Array} urlsToPurge URLs to purge from the cache
  * @param {string} zoneId The Cloudflare Zone ID
