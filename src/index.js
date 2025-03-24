@@ -123,7 +123,7 @@ function determineUrlsToPurgeForAction(action, body, maxPageDepth) {
       urlsToPurge.push(articleUrl)
 
       // If any of the listing-related fields have changed, we need to purge the homepage.
-      if (listingRelatedFields.some(field => article.previous[field])) {
+      if (listingRelatedFields.some(field => article.previous[field] !== undefined)) {
         urlsToPurge = urlsToPurge.concat(
           determineMainListingUrlsToPurge(article, rootUrl, maxPageDepth),
           determineAuthorUrlsToPurge(article, maxPageDepth),
