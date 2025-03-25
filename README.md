@@ -46,10 +46,10 @@ Optionally, set the `CF_IS_ENTERPRISE` secret to either `true`, `TRUE`, or `1` i
 wrangler secret put CF_IS_ENTERPRISE
 ```
 
-Publish the script to Cloudflare:
+Deploy the script to Cloudflare:
 
 ```shell
-wrangler publish
+wrangler deploy
 ```
 
 ### 🪝 Set up Ghost integration
